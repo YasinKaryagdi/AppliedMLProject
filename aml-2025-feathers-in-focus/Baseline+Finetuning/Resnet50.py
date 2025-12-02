@@ -65,33 +65,21 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
 
+training_args = TrainingArguments(
+    output_dir="../resnet50-feathers",
+    num_train_epochs=5,
+    remove_unused_columns=False,
+)
 
-# accuracy = evaluate.load("accuracy")
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["validation"],
+)
+print(dataset)
+print(len(dataset["train"]), len(dataset["validation"]))
+print(dataset["train"][0])
+print("Starting training...")
 
-# def compute_metrics(pred):
-#     logits, labels = pred
-#     preds = logits.argmax(-1)
-#     return accuracy.compute(predictions=preds, references=labels)
-
-# training_args = TrainingArguments(
-#     output_dir="./resnet50-feathers",
-#     num_train_epochs=5,
-#     per_device_train_batch_size=32,
-#     per_device_eval_batch_size=32,
-#     save_strategy="epoch",
-#     learning_rate=1e-4,
-#     weight_decay=0.01,
-#     fp16=True,
-#     logging_steps=20,
-#     remove_unused_columns=False,
-# )
-
-# trainer = Trainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=dataset["train"],
-#     eval_dataset=dataset["validation"],
-# )
-# print("Starting training...")
-
-# trainer.train()
+outcome = trainer.train()
