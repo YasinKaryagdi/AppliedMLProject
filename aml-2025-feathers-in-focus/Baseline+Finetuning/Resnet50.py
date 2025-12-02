@@ -7,6 +7,17 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import evaluate
+from PIL import Image
+from transformers import default_data_collator
+
+def fix_grayscale(example):
+    if example["image"].mode != "RGB":
+        example["image"] = example["image"].convert("RGB")
+    return example
+
+def fix_labels(example):
+    example["labels"] = example["labels"] - 1
+    return example
 
 base = "../"
 
@@ -44,6 +55,24 @@ processor = AutoImageProcessor.from_pretrained(model_name)
 classes = np.load(os.path.join("../class_names.npy"), allow_pickle=True)
 num_classes = len(classes.item())
 
+def preprocess(example):
+    inputs = processor(example["image"], return_tensors="pt")
+    # pixel_values shape is [1, C, H, W], take the first
+    example["pixel_values"] = inputs["pixel_values"][0]
+    return example
+
+dataset['train'] = dataset["train"].map(fix_grayscale)
+dataset['validation'] = dataset["validation"].map(fix_grayscale)
+
+dataset["train"] = dataset["train"].map(preprocess)
+dataset["validation"] = dataset["validation"].map(preprocess)
+
+dataset["train"] = dataset["train"].remove_columns("image")
+dataset["validation"] = dataset["validation"].remove_columns("image")
+
+dataset["train"] = dataset["train"].map(fix_labels)
+dataset["validation"] = dataset["validation"].map(fix_labels)
+
 model = AutoModelForImageClassification.from_pretrained(
     model_name,
     num_labels=num_classes,
@@ -54,8 +83,6 @@ def transform(example):
     inputs = processor(example["image"], return_tensors="pt")
     example["pixel_values"] = inputs["pixel_values"][0]
     return example
-
-dataset = dataset.with_transform(transform)
 
 metric = evaluate.load("accuracy")
 
@@ -76,10 +103,9 @@ trainer = Trainer(
     args=training_args,
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
+    data_collator=default_data_collator,
 )
-print(dataset)
-print(len(dataset["train"]), len(dataset["validation"]))
-print(dataset["train"][0])
+
 print("Starting training...")
 
 outcome = trainer.train()
