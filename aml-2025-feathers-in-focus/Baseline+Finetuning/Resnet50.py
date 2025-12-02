@@ -104,6 +104,8 @@ trainer = Trainer(
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
     data_collator=default_data_collator,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32
 )
 
 print("Starting training...")
