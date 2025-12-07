@@ -96,6 +96,13 @@ training_args = TrainingArguments(
     output_dir="../resnet50-feathers",
     num_train_epochs=5,
     remove_unused_columns=False,
+    per_device_train_batch_size=8,  # Larger batch for CPU
+    per_device_eval_batch_size=16,   
+    dataloader_num_workers=0,  # MUST be 0 on Windows to avoid multiprocessing issues
+    eval_strategy="epoch",  
+    save_strategy="epoch",
+    logging_steps=100,
+    use_cpu=True,  # Use CPU
 )
 
 trainer = Trainer(
@@ -104,10 +111,11 @@ trainer = Trainer(
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
     data_collator=default_data_collator,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=32
+    compute_metrics=compute_metrics,
 )
 
 print("Starting training...")
 
 outcome = trainer.train()
+print("Training complete.")
+trainer.save_model("../resnet50-finetuned")
